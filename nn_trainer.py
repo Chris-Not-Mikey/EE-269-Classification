@@ -35,7 +35,7 @@ if __name__ == "__main__":
 # No CUDA available sadly
 #model = model.to('cuda')
 
-    data_dir = './ '
+    data_dir = '.'
     TRAIN = 'train'
     VAL = 'val'
     TEST = 'test'
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     dataloaders = {
         x: torch.utils.data.DataLoader(
             image_datasets[x], batch_size=8,
-            shuffle=True, num_workers=4
+            shuffle=True, num_workers=2
         )
         for x in [TRAIN, VAL, TEST]
     }

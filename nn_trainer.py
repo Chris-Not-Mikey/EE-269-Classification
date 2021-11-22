@@ -11,7 +11,7 @@ import time
 import os
 import copy
 
-model = models.vgg16(pretrained=True)
+#model = models.vgg16(pretrained=True)
 
 
 def visualize_model(vgg, num_images=6):
@@ -100,21 +100,21 @@ def eval_model(vgg, criterion):
 
 if __name__ == "__main__":
 # Freeze model weights
-    for param in model.parameters():
-        param.requires_grad = False
+#     for param in model.parameters():
+#         param.requires_grad = False
 
 
-# Add last layer per Waterloo paper:
-    model.classifier[6] = nn.Sequential(
-        nn.Linear(4096, 256),
-        nn.ReLU(),
-        nn.Dropout(0.4),
-        nn.Linear(256,2),
-        nn.LogSoftmax(dim=1)
+# # Add last layer per Waterloo paper:
+#     model.classifier[6] = nn.Sequential(
+#         nn.Linear(4096, 256),
+#         nn.ReLU(),
+#         nn.Dropout(0.4),
+#         nn.Linear(256,2),
+#         nn.LogSoftmax(dim=1)
         
-        )
+#         )
 
-    print(model.classifier)
+#     print(model.classifier)
 
 # No CUDA available sadly
 #model = model.to('cuda')
@@ -170,6 +170,24 @@ if __name__ == "__main__":
     print("Classes: ")
     class_names = image_datasets[TRAIN].classes
     print(image_datasets[TRAIN].classes)
+    
+    
+    # Load the pretrained model from pytorch
+    vgg16 = models.vgg16_bn()
+    vgg16.load_state_dict(torch.load("../input/vgg16bn/vgg16_bn.pth"))
+    print(vgg16.classifier[6].out_features) # 1000 
+
+
+    # Freeze training for all layers
+    for param in vgg16.features.parameters():
+        param.require_grad = False
+
+    # Newly created modules have require_grad=True by default
+    num_features = vgg16.classifier[6].in_features
+    features = list(vgg16.classifier.children())[:-1] # Remove last layer
+    features.extend([nn.Linear(num_features, len(class_names))]) # Add our layer with 4 outputs
+    vgg16.classifier = nn.Sequential(*features) # Replace the model classifier
+    print(vgg16)
     
     
     # Stary filling out criteria

@@ -50,6 +50,52 @@ def visualize_model(vgg, num_images=6):
             break
         
     vgg.train(mode=was_training) # Revert model back to original training state
+    
+    
+def eval_model(vgg, criterion):
+    since = time.time()
+    avg_loss = 0
+    avg_acc = 0
+    loss_test = 0
+    acc_test = 0
+    
+    test_batches = len(dataloaders[TEST])
+    print("Evaluating model")
+    print('-' * 10)
+    
+    for i, data in enumerate(dataloaders[TEST]):
+        if i % 100 == 0:
+            print("\rTest batch {}/{}".format(i, test_batches), end='', flush=True)
+
+        vgg.train(False)
+        vgg.eval()
+        inputs, labels = data
+
+        if use_gpu:
+            inputs, labels = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda(), volatile=True)
+        else:
+            inputs, labels = Variable(inputs, volatile=True), Variable(labels, volatile=True)
+
+        outputs = vgg(inputs)
+
+        _, preds = torch.max(outputs.data, 1)
+        loss = criterion(outputs, labels)
+
+        loss_test += loss.data[0]
+        acc_test += torch.sum(preds == labels.data)
+
+        del inputs, labels, outputs, preds
+        torch.cuda.empty_cache()
+        
+    avg_loss = loss_test / dataset_sizes[TEST]
+    avg_acc = acc_test / dataset_sizes[TEST]
+    
+    elapsed_time = time.time() - since
+    print()
+    print("Evaluation completed in {:.0f}m {:.0f}s".format(elapsed_time // 60, elapsed_time % 60))
+    print("Avg loss (test): {:.4f}".format(avg_loss))
+    print("Avg acc (test): {:.4f}".format(avg_acc))
+    print('-' * 10)
 
 
 if __name__ == "__main__":

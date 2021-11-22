@@ -70,6 +70,9 @@ def eval_model(vgg, criterion):
         vgg.train(False)
         vgg.eval()
         inputs, labels = data
+        
+        # No GPU for now. Someday should change this
+        use_gpu = False
 
         if use_gpu:
             inputs, labels = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda(), volatile=True)

@@ -101,7 +101,7 @@ def eval_model(vgg, criterion):
     print('-' * 10)
 
 
-if __name__ == "__main__":
+
 # Freeze model weights
 #     for param in model.parameters():
 #         param.requires_grad = False
@@ -122,82 +122,82 @@ if __name__ == "__main__":
 # No CUDA available sadly
 #model = model.to('cuda')
 
-    data_dir = '.'
-    TRAIN = 'train'
-    VAL = 'val'
-    TEST = 'test'
+data_dir = '.'
+TRAIN = 'train'
+VAL = 'val'
+TEST = 'test'
 
-    # VGG-16 Takes 224x224 images as input, so we resize all of them
-    data_transforms = {
-        TRAIN: transforms.Compose([
-            # Data augmentation is a good practice for the train set
-            # Here, we randomly crop the image to 224x224 and
-            # randomly flip it horizontally. 
-            transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-        ]),
-        VAL: transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-        ]),
-        TEST: transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-        ])
-    }
+# VGG-16 Takes 224x224 images as input, so we resize all of them
+data_transforms = {
+    TRAIN: transforms.Compose([
+        # Data augmentation is a good practice for the train set
+        # Here, we randomly crop the image to 224x224 and
+        # randomly flip it horizontally. 
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+    ]),
+    VAL: transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+    ]),
+    TEST: transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+    ])
+}
 
-    image_datasets = {
-        x: datasets.ImageFolder(
-            os.path.join(data_dir, x), 
-            transform=data_transforms[x]
-        )
-        for x in [TRAIN, VAL, TEST]
-    }
+image_datasets = {
+    x: datasets.ImageFolder(
+        os.path.join(data_dir, x), 
+        transform=data_transforms[x]
+    )
+    for x in [TRAIN, VAL, TEST]
+}
 
-    dataloaders = {
-        x: torch.utils.data.DataLoader(
-            image_datasets[x], batch_size=8,
-            shuffle=True, num_workers=2
-        )
-        for x in [TRAIN, VAL, TEST]
-    }
+dataloaders = {
+    x: torch.utils.data.DataLoader(
+        image_datasets[x], batch_size=8,
+        shuffle=True, num_workers=2
+    )
+    for x in [TRAIN, VAL, TEST]
+}
 
-    dataset_sizes = {x: len(image_datasets[x]) for x in [TRAIN, VAL, TEST]}
+dataset_sizes = {x: len(image_datasets[x]) for x in [TRAIN, VAL, TEST]}
 
-    for x in [TRAIN, VAL, TEST]:
-        print("Loaded {} images under {}".format(dataset_sizes[x], x))
+for x in [TRAIN, VAL, TEST]:
+    print("Loaded {} images under {}".format(dataset_sizes[x], x))
 
-    print("Classes: ")
-    class_names = image_datasets[TRAIN].classes
-    print(image_datasets[TRAIN].classes)
-    
-    
-    # Load the pretrained model from pytorch
-    vgg16 = models.vgg16_bn()
-    #vgg16.load_state_dict(torch.load("../input/vgg16bn/vgg16_bn.pth"))
-    print(vgg16.classifier[6].out_features) # 1000 
+print("Classes: ")
+class_names = image_datasets[TRAIN].classes
+print(image_datasets[TRAIN].classes)
 
 
-    # Freeze training for all layers
-    for param in vgg16.features.parameters():
-        param.require_grad = False
+# Load the pretrained model from pytorch
+vgg16 = models.vgg16_bn()
+#vgg16.load_state_dict(torch.load("../input/vgg16bn/vgg16_bn.pth"))
+print(vgg16.classifier[6].out_features) # 1000 
 
-    # Newly created modules have require_grad=True by default
-    num_features = vgg16.classifier[6].in_features
-    features = list(vgg16.classifier.children())[:-1] # Remove last layer
-    features.extend([nn.Linear(num_features, len(class_names))]) # Add our layer with 4 outputs
-    vgg16.classifier = nn.Sequential(*features) # Replace the model classifier
-    print(vgg16)
-    
-    
-    # Stary filling out criteria
-    criterion = nn.CrossEntropyLoss()
-    optimizer_ft = optim.SGD(vgg16.parameters(), lr=0.001, momentum=0.9)
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
-    
-    print("Test before training")
-    eval_model(vgg16, criterion)
+
+# Freeze training for all layers
+for param in vgg16.features.parameters():
+    param.require_grad = False
+
+# Newly created modules have require_grad=True by default
+num_features = vgg16.classifier[6].in_features
+features = list(vgg16.classifier.children())[:-1] # Remove last layer
+features.extend([nn.Linear(num_features, len(class_names))]) # Add our layer with 4 outputs
+vgg16.classifier = nn.Sequential(*features) # Replace the model classifier
+print(vgg16)
+
+
+# Stary filling out criteria
+criterion = nn.CrossEntropyLoss()
+optimizer_ft = optim.SGD(vgg16.parameters(), lr=0.001, momentum=0.9)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+
+print("Test before training")
+eval_model(vgg16, criterion)
 

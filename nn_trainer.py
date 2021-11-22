@@ -174,7 +174,7 @@ if __name__ == "__main__":
     
     # Load the pretrained model from pytorch
     vgg16 = models.vgg16_bn()
-    vgg16.load_state_dict(torch.load("../input/vgg16bn/vgg16_bn.pth"))
+    #vgg16.load_state_dict(torch.load("../input/vgg16bn/vgg16_bn.pth"))
     print(vgg16.classifier[6].out_features) # 1000 
 
 

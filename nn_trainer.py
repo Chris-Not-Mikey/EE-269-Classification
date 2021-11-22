@@ -23,6 +23,6 @@ if __name__ == "__main__":
 
     print(model.classifier)
 
-
-model = model.to('cuda')
+# No CUDA available sadly
+#model = model.to('cuda')
 

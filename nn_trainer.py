@@ -176,4 +176,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer_ft = optim.SGD(vgg16.parameters(), lr=0.001, momentum=0.9)
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+    
+    print("Test before training")
+    eval_model(vgg16, criterion)
 

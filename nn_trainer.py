@@ -14,6 +14,44 @@ import copy
 model = models.vgg16(pretrained=True)
 
 
+def visualize_model(vgg, num_images=6):
+    was_training = vgg.training
+    
+    # Set model for evaluation
+    vgg.train(False)
+    vgg.eval() 
+    
+    images_so_far = 0
+
+    for i, data in enumerate(dataloaders[TEST]):
+        inputs, labels = data
+        size = inputs.size()[0]
+        
+        if use_gpu:
+            inputs, labels = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda(), volatile=True)
+        else:
+            inputs, labels = Variable(inputs, volatile=True), Variable(labels, volatile=True)
+        
+        outputs = vgg(inputs)
+        
+        _, preds = torch.max(outputs.data, 1)
+        predicted_labels = [preds[j] for j in range(inputs.size()[0])]
+        
+        print("Ground truth:")
+        show_databatch(inputs.data.cpu(), labels.data.cpu())
+        print("Prediction:")
+        show_databatch(inputs.data.cpu(), predicted_labels)
+        
+        del inputs, labels, outputs, preds, predicted_labels
+        torch.cuda.empty_cache()
+        
+        images_so_far += size
+        if images_so_far >= num_images:
+            break
+        
+    vgg.train(mode=was_training) # Revert model back to original training state
+
+
 if __name__ == "__main__":
 # Freeze model weights
     for param in model.parameters():

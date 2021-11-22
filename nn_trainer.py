@@ -83,8 +83,8 @@ def eval_model(vgg, criterion):
 
         _, preds = torch.max(outputs.data, 1)
         loss = criterion(outputs, labels)
-        print(preds)
-        print(loss)
+        #print(preds)
+        #print(loss)
 
         loss_test += loss.item() #data[0]
         acc_test += torch.sum(preds == labels.data)

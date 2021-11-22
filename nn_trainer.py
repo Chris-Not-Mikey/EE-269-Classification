@@ -86,7 +86,7 @@ def eval_model(vgg, criterion):
         print(preds)
         print(loss)
 
-        loss_test += loss.data[0]
+        loss_test += loss.item() #data[0]
         acc_test += torch.sum(preds == labels.data)
 
         del inputs, labels, outputs, preds

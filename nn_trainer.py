@@ -101,6 +101,118 @@ def eval_model(vgg, criterion):
     print("Avg loss (test): {:.4f}".format(avg_loss))
     print("Avg acc (test): {:.4f}".format(avg_acc))
     print('-' * 10)
+    
+ 
+def train_model(vgg, criterion, optimizer, scheduler, num_epochs=10):
+    since = time.time()
+    best_model_wts = copy.deepcopy(vgg.state_dict())
+    best_acc = 0.0
+
+    avg_loss = 0
+    avg_acc = 0
+    avg_loss_val = 0
+    avg_acc_val = 0
+
+    train_batches = len(dataloaders[TRAIN])
+    val_batches = len(dataloaders[VAL])
+
+    for epoch in range(num_epochs):
+        print("Epoch {}/{}".format(epoch, num_epochs))
+        print('-' * 10)
+
+        loss_train = 0
+        loss_val = 0
+        acc_train = 0
+        acc_val = 0
+
+        vgg.train(True)
+
+        for i, data in enumerate(dataloaders[TRAIN]):
+            if i % 100 == 0:
+                print("\rTraining batch {}/{}".format(i, train_batches / 2), end='', flush=True)
+
+            # Use half training dataset
+            if i >= train_batches / 2:
+                break
+
+            inputs, labels = data
+
+            if use_gpu:
+                inputs, labels = Variable(inputs.cuda()), Variable(labels.cuda())
+            else:
+                inputs, labels = Variable(inputs), Variable(labels)
+
+            optimizer.zero_grad()
+
+            outputs = vgg(inputs)
+
+            _, preds = torch.max(outputs.data, 1)
+            loss = criterion(outputs, labels)
+
+            loss.backward()
+            optimizer.step()
+
+            loss_train += loss.data[0]
+            acc_train += torch.sum(preds == labels.data)
+
+            del inputs, labels, outputs, preds
+            torch.cuda.empty_cache()
+
+        print()
+        # * 2 as we only used half of the dataset
+        avg_loss = loss_train * 2 / dataset_sizes[TRAIN]
+        avg_acc = acc_train * 2 / dataset_sizes[TRAIN]
+
+        vgg.train(False)
+        vgg.eval()
+
+        for i, data in enumerate(dataloaders[VAL]):
+            if i % 100 == 0:
+                print("\rValidation batch {}/{}".format(i, val_batches), end='', flush=True)
+
+            inputs, labels = data
+
+            if use_gpu:
+                inputs, labels = Variable(inputs.cuda(), volatile=True), Variable(labels.cuda(), volatile=True)
+            else:
+                inputs, labels = Variable(inputs, volatile=True), Variable(labels, volatile=True)
+
+            optimizer.zero_grad()
+
+            outputs = vgg(inputs)
+
+            _, preds = torch.max(outputs.data, 1)
+            loss = criterion(outputs, labels)
+
+            loss_val += loss.data[0]
+            acc_val += torch.sum(preds == labels.data)
+
+            del inputs, labels, outputs, preds
+            torch.cuda.empty_cache()
+
+        avg_loss_val = loss_val / dataset_sizes[VAL]
+        avg_acc_val = acc_val / dataset_sizes[VAL]
+
+        print()
+        print("Epoch {} result: ".format(epoch))
+        print("Avg loss (train): {:.4f}".format(avg_loss))
+        print("Avg acc (train): {:.4f}".format(avg_acc))
+        print("Avg loss (val): {:.4f}".format(avg_loss_val))
+        print("Avg acc (val): {:.4f}".format(avg_acc_val))
+        print('-' * 10)
+        print()
+
+        if avg_acc_val > best_acc:
+            best_acc = avg_acc_val
+            best_model_wts = copy.deepcopy(vgg.state_dict())
+
+    elapsed_time = time.time() - since
+    print()
+    print("Training completed in {:.0f}m {:.0f}s".format(elapsed_time // 60, elapsed_time % 60))
+    print("Best acc: {:.4f}".format(best_acc))
+
+    vgg.load_state_dict(best_model_wts)
+    return vgg
 
 
 
@@ -201,5 +313,12 @@ optimizer_ft = optim.SGD(vgg16.parameters(), lr=0.001, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 print("Test before training")
+eval_model(vgg16, criterion)
+
+print("Starting Training")
+vgg16 = train_model(vgg16, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=2)
+torch.save(vgg16.state_dict(), 'VGG16_v2-OCT_Retina_half_dataset.pt')
+
+print("Final evaluation")
 eval_model(vgg16, criterion)
 
